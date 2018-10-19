@@ -18,6 +18,7 @@
             justify-content: center;
             font-family: helvetica;
         }
+
         .wrapper {
             background: linear-gradient(to bottom, rgba(250, 250, 250, 1) 0%, rgba(195, 195, 195, 1) 100%);
             border-radius: 8px;
@@ -33,6 +34,7 @@
         .row:nth-child(2) {
             margin-left: -30px;
         }
+
         .row:nth-child(3) {
             margin-left: -40px;
         }
@@ -54,8 +56,8 @@
         kbd {
             font-size: 12px;
             position: absolute;
-            top: 10px;
-            left: 6px;
+            top: 3px;
+            left: 5px;
             font-family: helvetica;
 
         }
@@ -72,6 +74,14 @@
         .item:hover button {
             display: block;
         }
+
+        .item img {
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            left: 4px;
+            bottom: 2px;
+        }
     </style>
 </head>
 
@@ -81,67 +91,133 @@
         </div>
     </main>
     <script>
-        let item, kbd, btn, span, row;
-        let keys = {
-            '0': ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
-            '1': ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
-            '2': ['z', 'x', 'c', 'v', 'b', 'n', 'm',','],
+        // 1.初始化
+        let init = initFn();
+        let keys = init.keys;
+        let hash = init.hash;
 
-        };
-        let hash = JSON.parse(localStorage.getItem("navHash")) || {
-            'q': 'qq.com',
-            'w': 'weibo.com',
-            'e': 'ele.me',
-            'r': 'renren.com',
-            't': 'tianya.com',
-            'y': 'youtube.com',
-            'u': 'uc.com',
-            'i': 'iqiyi.com',
-            'o': 'opera.com',
-            'p': undefined,
-            'a': 'acfun.tv',
-            's': 'sohu.com',
-            'z': 'zhihu.com',
-            'm': 'www.mcdonalds.com.cn'
-        };
-        for (let i in keys) {
-            row = document.createElement("div");
-            row.classList.add('row');
-            main.appendChild(row);
-            for (let j in keys[i]) {
-                let letter = keys[i][j];
+        // 2.创建键盘
+        generateKeyBoard(keys, hash);
 
-                item = document.createElement('div');
-                item.classList.add("item")
+        // 3.监听用户
+        listenUser();
 
-                kbd = document.createElement('kbd');
-                kbd.innerText = letter;
-
-                btn = document.createElement('button');
-                btn.innerText = "编辑";
-
-                row.appendChild(item);
-                item.appendChild(kbd);
-                item.appendChild(btn);
-
-                item.onclick = function (e) {
-                    if (e.target.tagName.toLowerCase() == 'button') {
-                        let website = prompt("请给我一个网址");
-                        if (website) {
-                            hash[letter] = website;
-                            localStorage.setItem('navHash', JSON.stringify(hash))
-                        }
-                    } else {
-                        window.open('http://' + hash[letter], '_blank');
-                    }
+        function listenUser() {
+            document.onkeypress = function (e) {
+                if (hash[e.key]) {
+                    window.open('http://' + hash[e.key], '_blank');
                 }
             }
         }
 
-        document.onkeypress = function (e) {
-            window.open('http://' + hash[e.key], '_blank');
+        function create(config = {}) {
+            let tag = config.tag || "div",
+                parent = config.parent || main,
+                cName = config.cName || '',
+                text = config.text || '',
+                letter = config.letter;
+            let ele = document.createElement(tag);
+            ele.innerText = text;
+            if (cName) {
+                ele.classList.add(cName);
+            }
+
+            if (tag == 'img') {
+                if (hash[letter]) {
+                    ele.src = "https://" + hash[letter] + '/favicon.ico'
+                } else {
+                    ele.src = '//i.loli.net/2018/10/19/5bc95631d6646.png';
+                }
+                ele.onerror = function (e) {
+                    e.target.src = '//i.loli.net/2018/10/19/5bc95631d6646.png';
+                }
+            } else if (tag == 'button') {
+                ele.onclick = function (e) {
+                    let website = prompt("请给我一个网址");
+                    if (website) {
+                        hash[letter] = website;
+                        storage('navhash').save(hash);
+                        e.target.nextSibling.src = "http://" + hash[letter] + '/favicon.ico';
+                    }
+                }
+            }
+            parent.appendChild(ele);
+            return ele;
+        }
+
+        function storage(name) {
+            return {
+                fetch() {
+                    return JSON.parse(window.localStorage.getItem(name) || null);
+                },
+                save(json) {
+                    window.localStorage.setItem(name, JSON.stringify(json));
+                }
+            }
+        }
+
+        function initFn() {
+            let keys = [
+                ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+                ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+                ['z', 'x', 'c', 'v', 'b', 'n', 'm', ',']
+            ];
+            let hash = storage("navhash").fetch() || {
+                'q': 'qq.com',
+                'w': 'weibo.com',
+                'e': 'ele.me',
+                'r': 'renren.com',
+                't': 'tencent.com',
+                'y': 'youtube.com',
+                'u': 'uc.com',
+                'i': 'iqiyi.com',
+                'o': 'opera.com',
+                'p': undefined,
+                'a': 'acfun.tv',
+                's': 'sohu.com',
+                'z': 'zhihu.com',
+                'm': 'www.mcdonalds.com.cn'
+            };
+            return {
+                keys: keys,
+                hash: hash
+            }
+        };
+
+        function generateKeyBoard(keys, hash) {
+            for (let i in keys) {
+                let row = create({
+                    tag: "div",
+                    cName: "row",
+                })
+                for (let j in keys[i]) {
+                    let letter = keys[i][j];
+
+                    let item = create({
+                        cName: "item",
+                        parent: row
+                    })
+                    create({
+                        tag: "kbd",
+                        parent: item,
+                        text: letter
+                    })
+                    create({
+                        tag: "button",
+                        text: "编辑",
+                        parent: item,
+                        letter: letter
+                    })
+                    create({
+                        tag: "img",
+                        parent: item,
+                        letter: letter
+                    })
+                }
+            }
         }
     </script>
+
 </body>
 
 </html>
